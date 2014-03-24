@@ -16,7 +16,7 @@
 	$.PaginationCalculator = function(maxentries, opts) {
 		this.maxentries = maxentries;
 		this.opts = opts;
-	};
+	}
 	
 	$.extend($.PaginationCalculator.prototype, {
 		/**
@@ -43,7 +43,7 @@
 	});
 	
 	// Initialize jQuery object container for pagination renderers
-	$.PaginationRenderers = {};
+	$.PaginationRenderers = {}
 	
 	/**
 	 * @class Default renderer for rendering pagination links
@@ -52,7 +52,7 @@
 		this.maxentries = maxentries;
 		this.opts = opts;
 		this.pc = new $.PaginationCalculator(maxentries, opts);
-	};
+	}
 	$.extend($.PaginationRenderers.defaultRenderer.prototype, {
 		/**
 		 * Helper function for generating a single link (or a span tag if it's the current page)
@@ -65,18 +65,15 @@
 			var lnk, np = this.pc.numPages();
 			page_id = page_id<0?0:(page_id<np?page_id:np-1); // Normalize page id to sane value
 			appendopts = $.extend({text:page_id+1, classes:""}, appendopts||{});
-			if(page_id == current_page){
-				lnk = $("<span class='current'>" + appendopts.text + "</span>");
-			}
-			else
-			{
-				lnk = $("<a>" + appendopts.text + "</a>")
-					.attr('href', this.opts.link_to.replace(/__id__/,page_id));
-			}
+			lnk = $("<a>" + appendopts.text + "</a>")
+				.attr('href', this.opts.link_to.replace(/__id__/,page_id));
 			if(appendopts.classes){ lnk.addClass(appendopts.classes); }
-			if(appendopts.rel){ lnk.attr('rel', appendopts.rel); }
 			lnk.data('page_id', page_id);
-			return lnk;
+			var output = $('<li></li>').append(lnk);
+			if(page_id == current_page){
+				output.addClass('active');
+			}
+			return output;
 		},
 		// Generate a range of numeric links 
 		appendRange:function(container, current_page, start, end, opts) {
@@ -89,11 +86,11 @@
 			var begin, end,
 				interval = this.pc.getInterval(current_page),
 				np = this.pc.numPages(),
-				fragment = $("<div class='pagination'></div>");
+				fragment = $("<ul class='pagination pagination-sm'></ul>");
 			
 			// Generate "Previous"-Link
 			if(this.opts.prev_text && (current_page > 0 || this.opts.prev_show_always)){
-				fragment.append(this.createLink(current_page-1, current_page, {text:this.opts.prev_text, classes:"prev",rel:"prev"}));
+				fragment.append(this.createLink(current_page-1, current_page, {text:this.opts.prev_text, classes:"prev"}));
 			}
 			// Generate starting points
 			if (interval.start > 0 && this.opts.num_edge_entries > 0)
@@ -102,7 +99,7 @@
 				this.appendRange(fragment, current_page, 0, end, {classes:'sp'});
 				if(this.opts.num_edge_entries < interval.start && this.opts.ellipse_text)
 				{
-					$("<span>"+this.opts.ellipse_text+"</span>").appendTo(fragment);
+					$("<li><a>"+this.opts.ellipse_text+"</a></li>").appendTo(fragment);
 				}
 			}
 			// Generate interval links
@@ -112,7 +109,7 @@
 			{
 				if(np-this.opts.num_edge_entries > interval.end && this.opts.ellipse_text)
 				{
-					$("<span>"+this.opts.ellipse_text+"</span>").appendTo(fragment);
+					$("<li><span>"+this.opts.ellipse_text+"</span></li>").appendTo(fragment);
 				}
 				begin = Math.max(np-this.opts.num_edge_entries, interval.end);
 				this.appendRange(fragment, current_page, begin, np, {classes:'ep'});
@@ -120,7 +117,7 @@
 			}
 			// Generate "Next"-Link
 			if(this.opts.next_text && (current_page < np-1 || this.opts.next_show_always)){
-				fragment.append(this.createLink(current_page+1, current_page, {text:this.opts.next_text, classes:"next",rel:"next"}));
+				fragment.append(this.createLink(current_page+1, current_page, {text:this.opts.next_text, classes:"next"}));
 			}
 			$('a', fragment).click(eventHandler);
 			return fragment;
@@ -143,8 +140,7 @@
 			prev_show_always:true,
 			next_show_always:true,
 			renderer:"defaultRenderer",
-			show_if_single_page:false,
-			load_first_page:true,
+			load_first_page:false,
 			callback:function(){return false;}
 		},opts||{});
 		
@@ -156,13 +152,13 @@
 		 * @param {int} page_id The new page number
 		 */
 		function paginationClickHandler(evt){
-			var links, 
-				new_current_page = $(evt.target).data('page_id'),
-				continuePropagation = selectPage(new_current_page);
-			if (!continuePropagation) {
-				evt.stopPropagation();
-			}
-			return continuePropagation;
+			// var links, 
+			// 	new_current_page = $(evt.target).data('page_id'),
+			// 	continuePropagation = selectPage(new_current_page);
+			// if (!continuePropagation) {
+			// 	evt.stopPropagation();
+			// }
+			// return continuePropagation;
 		}
 		
 		/**
@@ -185,7 +181,7 @@
 		// -----------------------------------
 		// Initialize containers
 		// -----------------------------------
-		current_page = parseInt(opts.current_page, 10);
+		current_page = opts.current_page;
 		containers.data('current_page', current_page);
 		// Create a sane value for maxentries and items_per_page
 		maxentries = (!maxentries || maxentries < 0)?1:maxentries;
@@ -200,41 +196,34 @@
 		// Attach control events to the DOM elements
 		var pc = new $.PaginationCalculator(maxentries, opts);
 		var np = pc.numPages();
-		containers.off('setPage').on('setPage', {numPages:np}, function(evt, page_id) { 
+		containers.bind('setPage', {numPages:np}, function(evt, page_id) { 
 				if(page_id >= 0 && page_id < evt.data.numPages) {
 					selectPage(page_id); return false;
 				}
 		});
-		containers.off('prevPage').on('prevPage', function(evt){
+		containers.bind('prevPage', function(evt){
 				var current_page = $(this).data('current_page');
 				if (current_page > 0) {
 					selectPage(current_page - 1);
 				}
 				return false;
 		});
-		containers.off('nextPage').on('nextPage', {numPages:np}, function(evt){
+		containers.bind('nextPage', {numPages:np}, function(evt){
 				var current_page = $(this).data('current_page');
 				if(current_page < evt.data.numPages - 1) {
 					selectPage(current_page + 1);
 				}
 				return false;
 		});
-		containers.off('currentPage').on('currentPage', function(){
-				var current_page = $(this).data('current_page');
-				selectPage(current_page);
-				return false;
-		});
 		
 		// When all initialisation is done, draw the links
 		links = renderer.getLinks(current_page, paginationClickHandler);
 		containers.empty();
-		if(np > 1 || opts.show_if_single_page) {
-			links.appendTo(containers);
-		}
+		links.appendTo(containers);
 		// call callback function
 		if(opts.load_first_page) {
 			opts.callback(current_page, containers);
 		}
-	}; // End of $.fn.pagination block
+	} // End of $.fn.pagination block
 	
 })(jQuery);
